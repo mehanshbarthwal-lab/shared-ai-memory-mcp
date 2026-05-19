@@ -1,14 +1,14 @@
 import "dotenv/config";
 
 import { randomUUID } from "node:crypto";
-
 import { McpServer } from "@modelcontextprotocol/sdk/server/mcp.js";
 import { StreamableHTTPServerTransport } from "@modelcontextprotocol/sdk/server/streamableHttp.js";
 import { isInitializeRequest } from "@modelcontextprotocol/sdk/types.js";
 import cors from "cors";
 import express, { type Request, type Response } from "express";
 
-import { requireBearerToken } from "./auth.js";
+// REMOVED legacy requireMcpToken import
+import { oauthRouter, isValidToken } from "./oauth.js";
 import { config, isProduction } from "./config.js";
 import { logger } from "./logger.js";
 import { artifactRouter } from "./routes/artifacts.js";
@@ -47,6 +47,9 @@ app.use(
 );
 app.use(express.json({ limit: "2mb" }));
 
+// OAuth 2.1 endpoints — must be registered before any auth middleware
+app.use(oauthRouter);
+
 app.get("/health", (_req: Request, res: Response) => {
   res.json({
     ok: true,
@@ -55,17 +58,45 @@ app.get("/health", (_req: Request, res: Response) => {
   });
 });
 
-app.use("/api/artifacts", requireBearerToken, artifactRouter);
+// Updated auth middleware for /mcp — returns proper OAuth discovery hint on 401
+app.use(["/mcp", "/claude/:mcp_token/mcp"], (req: Request, res: Response, next) => {
+  const authHeader = req.headers["authorization"] || "";
+  const token = authHeader.replace(/^Bearer\s+/i, "").trim();
+
+  if (!token || !isValidToken(token)) {
+    res.set(
+      "WWW-Authenticate",
+      `Bearer resource_metadata="${process.env.SERVER_URL || "https://shared-ai-memory-mcp.onrender.com"}/.well-known/oauth-protected-resource"`
+    );
+    res.status(401).json({ error: "unauthorized", message: "Bearer token required" });
+    return;
+  }
+
+  next();
+});
+
+app.use("/api/artifacts", (req: Request, res: Response, next) => {
+  const authHeader = req.headers["authorization"] || "";
+  const token = authHeader.replace(/^Bearer\s+/i, "").trim();
+  if (!token || !isValidToken(token)) {
+    res.status(401).json({ error: "unauthorized" });
+    return;
+  }
+  next();
+}, artifactRouter);
 
 const transports = new Map<string, StreamableHTTPServerTransport>();
 
-app.post("/mcp", requireBearerToken, async (req: Request, res: Response) => {
+// REMOVED requireMcpToken from route definitions
+app.post(["/mcp", "/claude/:mcp_token/mcp"], async (req: Request, res: Response) => {
+  console.log(`\n=== MCP POST RECEIVED ===`);
   const sessionId = req.header("mcp-session-id");
   let transport = sessionId ? transports.get(sessionId) : undefined;
 
   try {
     if (!transport) {
       if (sessionId || !isInitializeRequest(req.body)) {
+        console.error("❌ MCP Transport Error: Invalid or missing MCP session on POST.");
         res.status(400).json({
           jsonrpc: "2.0",
           error: { code: -32000, message: "Bad Request: invalid or missing MCP session." },
@@ -74,10 +105,12 @@ app.post("/mcp", requireBearerToken, async (req: Request, res: Response) => {
         return;
       }
 
+      console.log("🚀 Initializing new MCP Streamable HTTP Transport...");
       const server = createMcpServer();
       transport = new StreamableHTTPServerTransport({
         sessionIdGenerator: () => randomUUID(),
         onsessioninitialized: (newSessionId) => {
+          console.log(`✅ MCP Transport Session successfully bound! ID: ${newSessionId}`);
           if (transport) {
             transports.set(newSessionId, transport);
           }
@@ -85,6 +118,7 @@ app.post("/mcp", requireBearerToken, async (req: Request, res: Response) => {
       });
 
       transport.onclose = () => {
+        console.log(`🔌 MCP Transport Session closed: ${transport?.sessionId}`);
         if (transport?.sessionId) {
           transports.delete(transport.sessionId);
         }
@@ -114,11 +148,14 @@ app.post("/mcp", requireBearerToken, async (req: Request, res: Response) => {
   }
 });
 
-app.get("/mcp", requireBearerToken, async (req: Request, res: Response) => {
+// REMOVED requireMcpToken from route definitions
+app.get(["/mcp", "/claude/:mcp_token/mcp"], async (req: Request, res: Response) => {
+  console.log(`\n=== MCP GET RECEIVED ===`);
   const sessionId = req.header("mcp-session-id");
   const transport = sessionId ? transports.get(sessionId) : undefined;
 
   if (!transport) {
+    console.error("❌ MCP Transport Error: GET requested without valid session ID.");
     res.status(400).json({
       jsonrpc: "2.0",
       error: { code: -32000, message: "Bad Request: invalid or missing MCP session." },
@@ -130,7 +167,9 @@ app.get("/mcp", requireBearerToken, async (req: Request, res: Response) => {
   await transport.handleRequest(req, res);
 });
 
-app.delete("/mcp", requireBearerToken, async (req: Request, res: Response) => {
+// REMOVED requireMcpToken from route definitions
+app.delete(["/mcp", "/claude/:mcp_token/mcp"], async (req: Request, res: Response) => {
+  console.log(`\n=== MCP DELETE RECEIVED ===`);
   const sessionId = req.header("mcp-session-id");
   const transport = sessionId ? transports.get(sessionId) : undefined;
 
