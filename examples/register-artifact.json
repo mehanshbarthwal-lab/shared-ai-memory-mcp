@@ -1,0 +1,15 @@
+{
+  "project_name": "example-project",
+  "title": "Example deployment log",
+  "artifact_type": "log_file",
+  "provider": "s3",
+  "storage_key": "projects/example-project/logs/deployment.log",
+  "mime_type": "text/plain",
+  "tags": ["logs", "deployment"],
+  "description": "A placeholder example of registering an externally stored log.",
+  "source_client": "example-ingestion-script",
+  "source_workspace": "example-workspace",
+  "metadata": {
+    "example": true
+  }
+}

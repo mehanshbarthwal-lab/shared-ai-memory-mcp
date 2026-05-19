@@ -1,0 +1,9 @@
+{
+  "content": "This project stores large raw artifacts outside the memory database.",
+  "scope": "project",
+  "project_name": "example-project",
+  "source_account": "example-ai-client",
+  "memory_type": "project_context",
+  "tags": ["architecture", "storage"],
+  "importance": 4
+}

@@ -1,0 +1,23 @@
+services:
+  - type: web
+    name: shared-ai-memory-mcp
+    runtime: node
+    plan: starter
+    buildCommand: npm ci && npm run build
+    startCommand: npm start
+    healthCheckPath: /health
+    envVars:
+      - key: NODE_ENV
+        value: production
+      - key: SUPABASE_URL
+        sync: false
+      - key: SUPABASE_SERVICE_ROLE_KEY
+        sync: false
+      - key: MEMORY_MCP_TOKEN
+        sync: false
+      - key: DATABASE_PROVIDER
+        value: supabase
+      - key: LOG_LEVEL
+        value: info
+      - key: MAX_SEARCH_RESULTS
+        value: "10"
