@@ -8,7 +8,7 @@ import { isInitializeRequest } from "@modelcontextprotocol/sdk/types.js";
 import cors from "cors";
 import express, { type Request, type Response } from "express";
 
-import { requireBearerToken } from "./auth.js";
+import { requireBearerToken, requireMcpToken } from "./auth.js";
 import { config, isProduction } from "./config.js";
 import { logger } from "./logger.js";
 import { artifactRouter } from "./routes/artifacts.js";
@@ -59,7 +59,7 @@ app.use("/api/artifacts", requireBearerToken, artifactRouter);
 
 const transports = new Map<string, StreamableHTTPServerTransport>();
 
-app.post("/mcp", requireBearerToken, async (req: Request, res: Response) => {
+app.post("/mcp", requireMcpToken, async (req: Request, res: Response) => {
   const sessionId = req.header("mcp-session-id");
   let transport = sessionId ? transports.get(sessionId) : undefined;
 
@@ -114,7 +114,7 @@ app.post("/mcp", requireBearerToken, async (req: Request, res: Response) => {
   }
 });
 
-app.get("/mcp", requireBearerToken, async (req: Request, res: Response) => {
+app.get("/mcp", requireMcpToken, async (req: Request, res: Response) => {
   const sessionId = req.header("mcp-session-id");
   const transport = sessionId ? transports.get(sessionId) : undefined;
 
@@ -130,7 +130,7 @@ app.get("/mcp", requireBearerToken, async (req: Request, res: Response) => {
   await transport.handleRequest(req, res);
 });
 
-app.delete("/mcp", requireBearerToken, async (req: Request, res: Response) => {
+app.delete("/mcp", requireMcpToken, async (req: Request, res: Response) => {
   const sessionId = req.header("mcp-session-id");
   const transport = sessionId ? transports.get(sessionId) : undefined;
 
