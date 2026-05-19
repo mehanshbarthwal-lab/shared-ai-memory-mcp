@@ -1,14 +1,14 @@
 import "dotenv/config";
 
 import { randomUUID } from "node:crypto";
-
 import { McpServer } from "@modelcontextprotocol/sdk/server/mcp.js";
 import { StreamableHTTPServerTransport } from "@modelcontextprotocol/sdk/server/streamableHttp.js";
 import { isInitializeRequest } from "@modelcontextprotocol/sdk/types.js";
 import cors from "cors";
 import express, { type Request, type Response } from "express";
 
-import { requireBearerToken, requireMcpToken } from "./auth.js";
+import { requireMcpToken } from "./auth.js";
+import { oauthRouter, isValidToken } from "./oauth.js";
 import { config, isProduction } from "./config.js";
 import { logger } from "./logger.js";
 import { artifactRouter } from "./routes/artifacts.js";
@@ -47,6 +47,9 @@ app.use(
 );
 app.use(express.json({ limit: "2mb" }));
 
+// OAuth 2.1 endpoints — must be registered before any auth middleware
+app.use(oauthRouter);
+
 app.get("/health", (_req: Request, res: Response) => {
   res.json({
     ok: true,
@@ -55,7 +58,32 @@ app.get("/health", (_req: Request, res: Response) => {
   });
 });
 
-app.use("/api/artifacts", requireBearerToken, artifactRouter);
+// Updated auth middleware for /mcp — returns proper OAuth discovery hint on 401
+app.use(["/mcp"], (req: Request, res: Response, next) => {
+  const authHeader = req.headers["authorization"] || "";
+  const token = authHeader.replace(/^Bearer\s+/i, "").trim();
+
+  if (!token || !isValidToken(token)) {
+    res.set(
+      "WWW-Authenticate",
+      `Bearer resource_metadata="${process.env.SERVER_URL || "https://shared-ai-memory-mcp.onrender.com"}/.well-known/oauth-protected-resource"`
+    );
+    res.status(401).json({ error: "unauthorized", message: "Bearer token required" });
+    return;
+  }
+
+  next();
+});
+
+app.use("/api/artifacts", (req: Request, res: Response, next) => {
+  const authHeader = req.headers["authorization"] || "";
+  const token = authHeader.replace(/^Bearer\s+/i, "").trim();
+  if (!token || !isValidToken(token)) {
+    res.status(401).json({ error: "unauthorized" });
+    return;
+  }
+  next();
+}, artifactRouter);
 
 const transports = new Map<string, StreamableHTTPServerTransport>();
 
