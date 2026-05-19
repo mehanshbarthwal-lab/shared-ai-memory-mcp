@@ -59,7 +59,7 @@ app.use("/api/artifacts", requireBearerToken, artifactRouter);
 
 const transports = new Map<string, StreamableHTTPServerTransport>();
 
-app.post("/mcp", requireMcpToken, async (req: Request, res: Response) => {
+app.post(["/mcp", "/claude/:mcp_token/mcp"], requireMcpToken, async (req: Request, res: Response) => {
   const sessionId = req.header("mcp-session-id");
   let transport = sessionId ? transports.get(sessionId) : undefined;
 
@@ -114,7 +114,7 @@ app.post("/mcp", requireMcpToken, async (req: Request, res: Response) => {
   }
 });
 
-app.get("/mcp", requireMcpToken, async (req: Request, res: Response) => {
+app.get(["/mcp", "/claude/:mcp_token/mcp"], requireMcpToken, async (req: Request, res: Response) => {
   const sessionId = req.header("mcp-session-id");
   const transport = sessionId ? transports.get(sessionId) : undefined;
 
@@ -130,7 +130,7 @@ app.get("/mcp", requireMcpToken, async (req: Request, res: Response) => {
   await transport.handleRequest(req, res);
 });
 
-app.delete("/mcp", requireMcpToken, async (req: Request, res: Response) => {
+app.delete(["/mcp", "/claude/:mcp_token/mcp"], requireMcpToken, async (req: Request, res: Response) => {
   const sessionId = req.header("mcp-session-id");
   const transport = sessionId ? transports.get(sessionId) : undefined;
 
