@@ -1,6 +1,19 @@
 # Shared AI Memory MCP
 
-Self-hostable, open-source Remote MCP server that gives Claude and other MCP-compatible AI clients access to shared memory plus large-file and log recall using user-owned database and storage.
+Shared memory for multiple AI clients, owned by you.
+
+This is a self-hostable Remote MCP server for durable project memory, large-file recall, and log recall. Claude and other MCP-compatible clients connect to the same endpoint, while your Supabase PostgreSQL database and storage keep the data under your control.
+
+![Shared AI Memory MCP flow](assets/readme/memory-flow.svg)
+
+## What You Get
+
+- One Remote MCP endpoint for shared memory across compatible AI clients.
+- Small durable memories in Supabase PostgreSQL.
+- Large files, logs, documents, and datasets stored outside the memory table.
+- Search and recall tools for both memories and artifact chunks.
+- Simple bearer-token auth for self-hosted use.
+- Deployment guides for Render, Railway, Koyeb, Fly.io, Docker, and VPS hosts.
 
 ## Problem It Solves
 
@@ -68,20 +81,35 @@ See [docs/mcp-tools.md](docs/mcp-tools.md) for schemas and examples.
 
 ## Quick Start
 
+1. Install dependencies and copy the example environment file:
+
 ```bash
 npm install
 cp .env.example .env
+```
+
+2. Fill in `SUPABASE_URL`, `SUPABASE_SERVICE_ROLE_KEY`, and `MEMORY_MCP_TOKEN` in `.env`.
+3. Run the Supabase migrations:
+
+```text
+migrations/001_create_memories.sql
+migrations/002_create_artifacts.sql
+```
+
+4. Build and start the server:
+
+```bash
 npm run build
 npm run dev
 ```
 
-Then visit:
+5. Check the health endpoint:
 
 ```text
 http://localhost:3000/health
 ```
 
-The MCP endpoint is:
+6. Connect your MCP client to:
 
 ```text
 http://localhost:3000/mcp
