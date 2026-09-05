@@ -53,7 +53,7 @@ export interface MemoryUpdate {
     metadata?: Record<string, unknown>;
 }
 export interface MemorySearchFilters {
-    query: string;
+    query?: string;
     scope?: MemoryScope;
     project_name?: string;
     memory_type?: MemoryType;
@@ -101,11 +101,11 @@ export interface ArtifactChunkRecord {
 export interface ArtifactInsert {
     project_name?: string | null;
     scope?: MemoryScope;
-    artifact_type: ArtifactType;
-    title: string;
+    artifact_type?: ArtifactType;
+    title?: string;
     description?: string | null;
-    provider: ArtifactProvider;
-    storage_key: string;
+    provider?: ArtifactProvider;
+    storage_key?: string;
     external_url?: string | null;
     mime_type?: string | null;
     file_size_bytes?: number | null;
@@ -127,7 +127,7 @@ export interface ArtifactListFilters {
     limit: number;
 }
 export interface ArtifactSearchFilters {
-    query: string;
+    query?: string;
     project_name?: string;
     artifact_type?: ArtifactType;
     provider?: ArtifactProvider;

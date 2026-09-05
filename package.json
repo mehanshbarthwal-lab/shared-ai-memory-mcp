@@ -4,6 +4,7 @@
   "description": "Self-hostable Remote MCP server for shared AI memory and artifact recall backed by user-owned storage.",
   "type": "module",
   "main": "dist/server.js",
+  "author": "Mehansh Barthwal",
   "license": "MIT",
   "scripts": {
     "dev": "tsx watch src/server.ts",
